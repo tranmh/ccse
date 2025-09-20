@@ -59,21 +59,49 @@ func printBanner() {
 func main() {
 	printBanner()
 
-	var cronExpr string
-
 	runAtStart := flag.Bool("run-at-start", false, "Send message immediately at startup")
 	printResponses := flag.Bool("print-responses", true, "Print Claude's responses")
+	schedule := flag.String("schedule", "2 4,9,14,19,0 * * *", "Cron schedule expression (default: every 5 hours starting at 4:02 AM)")
+
+	flag.Usage = func() {
+		fmt.Printf("Usage: %s [OPTIONS]\n\n", "main.exe")
+		fmt.Println("Claude Code Session Extender - Automatically extend Claude Code usage beyond 5-hour limits")
+		fmt.Println()
+		fmt.Println("OPTIONS:")
+		flag.PrintDefaults()
+		fmt.Println()
+		fmt.Println("SCHEDULE EXAMPLES:")
+		fmt.Println("  Default:           \"2 4,9,14,19,0 * * *\"     (4:02, 9:02, 14:02, 19:02, 0:02)")
+		fmt.Println("  Work 9 AM - 2 PM:  \"2 6,11,16,21,2 * * *\"    (6:02, 11:02, 16:02, 21:02, 2:02)")
+		fmt.Println("  Work 10 AM - 3 PM: \"2 7,12,17,22,3 * * *\"    (7:02, 12:02, 17:02, 22:02, 3:02)")
+		fmt.Println("  Work 6 AM - 11 AM: \"2 3,8,13,18,23 * * *\"    (3:02, 8:02, 13:02, 18:02, 23:02)")
+		fmt.Println()
+		fmt.Println("CRON FORMAT: \"minute hour day month weekday\"")
+		fmt.Println("  - minute: 0-59")
+		fmt.Println("  - hour: 0-23")
+		fmt.Println("  - day: 1-31")
+		fmt.Println("  - month: 1-12")
+		fmt.Println("  - weekday: 0-7 (0 and 7 are Sunday)")
+		fmt.Println()
+		fmt.Println("TIP: Start sessions 3 hours before your work time for maximum overlap!")
+	}
+
 	flag.Parse()
 
+	cronExpr := *schedule
+
+	// Check if user provided schedule as positional argument (legacy support)
 	args := flag.Args()
-	if len(args) < 1 {
-		// Default schedule: 4:02 AM and every 5 hours after (4:02, 9:02, 14:02, 19:02, 0:02)
-		cronExpr = "2 4,9,14,19,0 * * *"
-		fmt.Println("Using default schedule: 4:02 AM and every 5 hours after")
-		fmt.Println("Times: 4:02, 9:02, 14:02, 19:02, 0:02")
-	} else {
+	if len(args) >= 1 {
 		cronExpr = args[0]
-		fmt.Printf("Using custom schedule: %s\n", cronExpr)
+		fmt.Printf("Using schedule from argument: %s\n", cronExpr)
+	} else {
+		if *schedule == "2 4,9,14,19,0 * * *" {
+			fmt.Println("Using default schedule: 4:02 AM and every 5 hours after")
+		} else {
+			fmt.Printf("Using custom schedule: %s\n", cronExpr)
+		}
+		fmt.Println("Times: 4:02, 9:02, 14:02, 19:02, 0:02")
 	}
 
 	c := cron.New()
